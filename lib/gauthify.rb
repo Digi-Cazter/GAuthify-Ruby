@@ -1,7 +1,6 @@
 require 'net/http'
 require 'uri'
 require 'rest-client'
-require 'pry'
 require 'json'
 
 class GAuthifyError < Exception
@@ -35,15 +34,6 @@ end
 class NotFoundError < GAuthifyError
     <<-DOC
     Raised when a result isn't found for the parameters provided.
-    DOC
-end
-
-
-class ConnectionError < GAuthifyError
-    <<-DOC
-    Raised when couldn't connect to GAuthify.com. Check firewalls and other
-    things that could effect your network connection. Its a good idea to
-    accept 2nd factor authentication during times when this happens.
     DOC
 end
 
