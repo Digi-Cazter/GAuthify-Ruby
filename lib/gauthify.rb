@@ -225,7 +225,7 @@ class GAuthify
         end
         puts("Success ")
         puts("6) Detection of provided auth...")
-        result = get_user(account_name, 'test12')
+        result = get_user(account_name, 'test12')['provided_auth']
         if not result
             raise Exception
         end
