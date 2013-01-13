@@ -60,7 +60,7 @@ class GAuthify
           'https://api.gauthify.com/v1/',
           'https://backup.gauthify.com/v1/'
         ]
-        @headers = {:authorization => api_key, :user_agent => 'GAuthify/v1.00 Ruby/1.00'}
+        @headers = {:authorization => api_key, :user_agent => 'GAuthify/v1.00 Ruby/1.01'}
 
     end
 
