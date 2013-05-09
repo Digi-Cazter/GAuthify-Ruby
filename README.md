@@ -44,7 +44,7 @@ First instantiate a GAuthify object:
 * email: A valid email
 * Returns: The user hash or raises Error
 
-The user hash returned will have parameters outlined on the GAuthify.com dashboard page. You can show the user the QR code to scan in their google authenticator applicatoin or you can link/iframe the instructions url.
+The user hash returned will have parameters outlined on the GAuthify.com dashboard page. You can show the user the QR code to scan in their google authenticator application or you can link/iframe the instructions url.
 
 ####Update User:####
 
@@ -82,7 +82,7 @@ The user hash returned will have parameters outlined on the GAuthify.com dashboa
 
     auth_instance.get_user_by_token(<token>)
 
-* token: A 35 char token that starts with gat given by ezAuth.
+* token: A 35 char token that starts with gat given by ezGAuth.
 * Returns: User hash or raises Error
 
 ####Check Auth Code:####
@@ -91,7 +91,7 @@ The user hash returned will have parameters outlined on the GAuthify.com dashboa
 
 * unique_id: An id to identify user. Could be the PK used for the user in your db.
 * auth_code: Code retrieved from Google Authenticator, SMS, EMail, or OTP
-* safe_mode: If set to true, all exceptions during the request will be suppressed and the check will return True. This essentially temporary bypasses 2-factor authentication if there is a unusualy server error.
+* safe_mode: If set to true, all exceptions during the request will be suppressed and the check will return True. This essentially temporary bypasses 2-factor authentication if there is a unusual server error.
 * Return: True/False (bool) or raises Error
 
 
@@ -113,7 +113,7 @@ The user hash returned will have parameters outlined on the GAuthify.com dashboa
 
 Errors
 --------------
-Up to-date json formated errors can be grabbed from the server using:
+Up to-date json formatted errors can be grabbed from the server using:
 
     auth_instance.api_errors()
 
@@ -136,5 +136,5 @@ The following errors extend GAuthifyError:
 * ApiKeyError - Wraps 401 responses (api key issues)
 * RateLimitError - Wraps 402 responses (Plan limits, etc)
 * ParameterError - Wraps 406 response (Bad formatted unique_id, sms, phone number ,etc)
-* NotFoundError - Wraps 404 error (requesting a unique_id that doesnt exist)
+* NotFoundError - Wraps 404 error (requesting a unique_id that doesn't exist)
 * ServerError - Wraps 500 and other server errors

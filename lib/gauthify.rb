@@ -60,7 +60,7 @@ class GAuthify
         'https://api.gauthify.com/v1/',
         'https://backup.gauthify.com/v1/'
     ]
-    @headers = {:authorization => api_key, :user_agent => 'GAuthify/v1.25 Ruby/1.25'}
+    @headers = {:authorization => api_key, :user_agent => 'GAuthify-Ruby/v1.27'}
 
   end
 
@@ -110,7 +110,7 @@ class GAuthify
 
   def create_user(unique_id, display_name, email=nil, phone_number=nil)
     <<-DOC
-        Creates new user with a new secret key or resets if already exists
+        Creates new user (replaces with new if already exists)
     DOC
 
     params = {'display_name' => display_name}
@@ -268,7 +268,7 @@ class GAuthify
     if not user.class == Hash
       raise Exception
     end
-    puts(result)
+    puts(user)
     success()
 
     puts("3) Retrieving All Users...")
