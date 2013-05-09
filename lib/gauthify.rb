@@ -121,7 +121,6 @@ class GAuthify
       params['phone_number'] = phone_number
     end
     url_addon = "users/#{unique_id}/"
-    puts "HELLO", params
     return requests_handler('post', url_addon, params=params)
   end
 
