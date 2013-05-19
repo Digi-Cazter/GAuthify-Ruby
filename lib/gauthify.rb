@@ -60,7 +60,7 @@ class GAuthify
         'https://api.gauthify.com/v1/',
         'https://backup.gauthify.com/v1/'
     ]
-    @headers = {:authorization => api_key, :user_agent => 'GAuthify-Ruby/v1.27'}
+    @headers = {:authorization => api_key, :user_agent => 'GAuthify-Ruby/v1.271'}
 
   end
 
@@ -69,7 +69,7 @@ class GAuthify
     for each in @access_points
       begin
         req_url = each + url_addon
-        req = RestClient::Request.execute(:method => type, :url => req_url, :timeout => 1.5, :headers => @headers, :payload => params)
+        req = RestClient::Request.execute(:method => type, :url => req_url, :timeout => 5, :headers => @headers, :payload => params)
         status_code = req.code
         begin
           json_resp = JSON.parse(req.to_str)
