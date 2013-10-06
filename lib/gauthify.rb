@@ -2,6 +2,7 @@ require 'net/http'
 require 'uri'
 require 'rest-client'
 require 'json'
+require 'base64'
 
 class GAuthifyError < Exception
   <<-DOC
@@ -37,6 +38,12 @@ class NotFoundError < GAuthifyError
   DOC
 end
 
+class ConflictError < GAuthifyError
+  <<-DOC
+    Raised when a conflicting resource exists (e.g. post an existing user)
+  DOC
+end
+
 
 class ServerError < GAuthifyError
   <<-DOC
@@ -57,10 +64,11 @@ class GAuthify
 
   def initialize(api_key)
     @access_points = [
-        'https://api.gauthify.com/v1/',
-        'https://backup.gauthify.com/v1/'
+        'https://alpha.gauthify.com/v1/',
+        'https://beta.gauthify.com/v1/'
     ]
-    @headers = {:authorization => api_key, :user_agent => 'GAuthify-Ruby/v1.271'}
+    @headers = {:authorization => "Basic #{Base64.encode64(":#{api_key}")}",
+                :user_agent => 'GAuthify-Ruby/v2.0'}
 
   end
 
@@ -76,7 +84,7 @@ class GAuthify
         rescue
           json_resp = false
         end
-        if not json_resp.is_a? Hash or (status_code > 400 and not [401, 402, 406, 404].include?(status_code))
+        if not json_resp.is_a? Hash or (status_code > 400 and not [401, 402, 406, 404, 409].include?(status_code))
           raise RestClient::Exception
         end
         break
@@ -95,6 +103,9 @@ class GAuthify
             when 404
               json_resp = JSON.parse(e.http_body)
               raise NotFoundError.new(json_resp['error_message'], status_code, json_resp['error_code'], e.http_body), json_resp['error_message']
+            when 409
+              json_resp = JSON.parse(e.http_body)
+              raise ConflictError.new(json_resp['error_message'], status_code, json_resp['error_code'], e.http_body), json_resp['error_message']
           end
         end
         if each == @access_points[-1]
@@ -108,23 +119,29 @@ class GAuthify
   end
 
 
-  def create_user(unique_id, display_name, email=nil, phone_number=nil)
+  def create_user(unique_id, display_name, email=nil, sms_number=nil, voice_number=nil, meta=nil)
     <<-DOC
-        Creates new user (replaces with new if already exists)
+        Creates new user
     DOC
 
-    params = {'display_name' => display_name}
+    params = {'unique_id' => unique_id, 'display_name' => display_name}
     if email
       params['email'] = email
     end
-    if phone_number
-      params['phone_number'] = phone_number
+    if sms_number
+      params['sms_number'] = sms_number
     end
-    url_addon = "users/#{unique_id}/"
+    if voice_number
+      params['voice_number'] = voice_number
+    end
+    if meta
+      params['meta'] = meta.to_json
+    end
+    url_addon = "users/"
     return requests_handler('post', url_addon, params=params)
   end
 
-  def update_user(unique_id, email=nil, phone_number=nil, meta=nil, reset_key = false)
+  def update_user(unique_id, email=nil, sms_number=nil, voice_number=nil, meta=nil, reset_key = false)
     <<-DOC
         Creates new user with a new secret key or resets if already exists
     DOC
@@ -133,8 +150,11 @@ class GAuthify
     if email
       params['email'] = email
     end
-    if phone_number
-      params['phone_number'] = phone_number
+    if sms_number
+      params['sms_number'] = sms_number
+    end
+    if voice_number
+      params['voice_number'] = voice_number
     end
     if meta
       params['meta'] = meta.to_json
@@ -142,7 +162,6 @@ class GAuthify
     if reset_key
       params['reset_key'] = 'true'
     end
-    puts params
     url_addon = "users/#{unique_id}/"
     return requests_handler('put', url_addon, params=params)
   end
@@ -165,21 +184,21 @@ class GAuthify
   end
 
 
-  def get_user(unique_id, auth_code=nil)
+  def get_user(unique_id)
     <<-DOC
-        Returns a single user, checks the otp if provided
+        Returns a single user
     DOC
     url_addon = "users/#{unique_id}/"
-    url_addon << "check/#{auth_code}" if auth_code
     return requests_handler('get', url_addon)
   end
 
-  def get_user_by_token(unique_id)
+  def get_user_by_token(token)
     <<-DOC
         Returns a single user by ezGAuth token
     DOC
-    url_addon = "token/#{unique_id}/"
-    return requests_handler('get', url_addon)
+    params = {'token' => token}
+    url_addon = "token/"
+    return requests_handler('post', url_addon, params=params)
   end
 
   def check_auth(unique_id, auth_code, safe_mode = false)
@@ -187,10 +206,9 @@ class GAuthify
         Checks OTP returns True/False depending on OTP correctness.
     DOC
     begin
-      response = get_user(unique_id, auth_code)
-      if not response['provided_auth']
-        raise ParameterError('auth_code not detected. Check if params sent via get request.')
-      end
+      url_addon = "check/"
+      params = {'unique_id' => unique_id, 'auth_code' => auth_code}
+      response = requests_handler('post', url_addon, params=params)
       return response['authenticated']
     rescue GAuthifyError => e
       if safe_mode
@@ -202,27 +220,40 @@ class GAuthify
 
   end
 
+  def send_email(unique_id, email = nil)
+    <<-DOC
+        Sends email with the one time auth_code
+    DOC
+    url_addon = "email/"
+    params = {'unique_id' => unique_id}
+    if email
+      params['email'] = email
+    end
+    return requests_handler('post', url_addon, params=params)
+  end
 
-  def send_sms(unique_id, phone_number = nil)
+  def send_sms(unique_id, sms_number = nil)
     <<-DOC
         Sends text message to phone number with the one time auth_code
     DOC
-    url_addon = "users/#{unique_id}/sms/"
-    if phone_number
-      url_addon << "#{phone_number}/"
+    url_addon = "sms/"
+    params = {'unique_id' => unique_id}
+    if sms_number
+      params['sms_number'] = sms_number
     end
-    return requests_handler('get', url_addon)
+    return requests_handler('post', url_addon, params=params)
   end
 
-  def send_email(unique_id, email=nil)
+  def send_voice(unique_id, voice_number = nil)
     <<-DOC
-        Sends email message to phone number with the one time auth_code
+       Makes a call to phone number with the one time auth_code
     DOC
-    url_addon = "users/#{unique_id}/email/"
-    if email
-      url_addon << "#{email}/"
+    url_addon = "voice/"
+    params = {'unique_id' => unique_id}
+    if voice_number
+      params['voice_number'] = voice_number
     end
-    return requests_handler('get', url_addon)
+    return requests_handler('post', url_addon, params=params)
   end
 
   def api_errors()
@@ -234,11 +265,15 @@ class GAuthify
   end
 
 
-  def quick_test(test_email = nil, test_number = nil)
+  def quick_test(test_email = nil, test_sms_number = nil, test_voice_number = nil)
     <<-DOC
         Runs initial tests to make sure everything is working fine
     DOC
     account_name = 'testuser@gauthify.com'
+    begin
+      delete_user(account_name)
+    rescue NotFoundError => e
+    end
 
     def success()
       print("Success \n")
@@ -246,8 +281,10 @@ class GAuthify
 
     puts("1) Testing Creating a User...")
     result = create_user(account_name,
-                         account_name, email='firsttest@gauthify.com',
-                         phone_number='0123456789')
+                         account_name,
+                         email='firsttest@gauthify.com',
+                         sms_number='9162627232',
+                         voice_number='9162627233')
     if not result['unique_id'] == account_name
       raise Exception
     end
@@ -257,7 +294,10 @@ class GAuthify
     if not result['email'] == 'firsttest@gauthify.com'
       raise Exception
     end
-    if not result['phone_number'] == '0123456789'
+    if not result['sms_number'] == '+19162627232'
+      raise Exception
+    end
+    if not result['voice_number'] == '+19162627233'
       raise Exception
     end
     puts(result)
@@ -300,26 +340,30 @@ class GAuthify
       puts(result)
       success()
     end
-    if test_number
-      puts("5B) Testing SMS to #{test_number}")
-      send_sms(account_name, test_number)
+    if test_sms_number
+      puts("5B) Testing SMS to #{test_sms_number}")
+      send_sms(account_name, test_sms_number)
       success()
     end
-    puts("6) Detection of provided auth...")
-    result = get_user(account_name, 'test12')
-    if not result['provided_auth']
-      raise Exception
+    if test_voice_number
+      puts("5C) Calling #{test_voice_number}")
+      send_voice(account_name, test_voice_number)
+      success()
     end
-    puts(result)
-    success()
 
-    puts("7) Testing updating email, phone, and meta")
-    result = update_user(account_name, email='test@gauthify.com',
-                         phone_number='1234567890', meta={'a' => 'b'})
+    puts("6) Testing updating email, phone, and meta")
+    result = update_user(account_name,
+                         email='test@gauthify.com',
+                         sms_number='9162627235',
+                         voice_number='9162627236',
+                         meta={'a' => 'b'})
     if not result['email'] == 'test@gauthify.com'
       raise Exception
     end
-    if not result['phone_number'] == '1234567890'
+    if not result['sms_number'] == '+19162627235'
+      raise Exception
+    end
+    if not result['voice_number'] == '+19162627236'
       raise Exception
     end
     if not result['meta']['a'] == 'b'
@@ -328,19 +372,19 @@ class GAuthify
     current_key = result['key']
     success()
 
-    puts("8) Testing key/secret")
-    result = update_user(account_name, nil, nil, nil, true)
+    puts("7) Testing key/secret")
+    result = update_user(account_name, nil, nil, nil, nil, true)
     puts(current_key, result['key'])
     if not result['key'] != current_key
       raise Exception
     end
     success()
 
-    puts("9) Deleting Created User...")
+    puts("8) Deleting Created User...")
     result = delete_user(account_name)
     success()
 
-    puts("10) Testing backup server...")
+    puts("9) Testing backup server...")
     current = @access_points[0]
     @access_points[0] = 'https://blah.gauthify.com/v1/'
     result = get_all_users()
