@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
   s.name        = 'gauthify'
-  s.version     = '1.2.71'
-  s.date        = '2013-05-08'
+  s.version     = '2.0.0'
+  s.date        = '2013-10-06'
   s.summary     = ""
   s.description = "API library for GAuthify.com (Google Authenticator, SMS, email multi factor authentication)."
   s.authors     = ["GAuthify"]
