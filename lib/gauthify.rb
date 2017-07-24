@@ -63,10 +63,7 @@ class GAuthify
   attr_accessor :headers, :access_points
 
   def initialize(api_key)
-    @access_points = [
-        'https://alpha.gauthify.com/v1/',
-        'https://beta.gauthify.com/v1/'
-    ]
+    @access_points = ['https://api.gauthify.com/v1/']
     @headers = {:authorization => "Basic #{Base64.encode64(":#{api_key}")}",
                 :user_agent => 'GAuthify-Ruby/v2.0'}
 
