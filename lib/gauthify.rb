@@ -201,13 +201,13 @@ class GAuthify
     return requests_handler('post', url_addon, params=params)
   end
 
-  def check_auth(unique_id, auth_code, safe_mode = false)
+  def check_auth(unique_id, otp, otp_id, safe_mode = false)
     <<-DOC
         Checks OTP returns True/False depending on OTP correctness.
     DOC
     begin
       url_addon = "check/"
-      params = {'unique_id' => unique_id, 'auth_code' => auth_code}
+      params = {'unique_id' => unique_id, 'otp' => otp, 'otp_id' => otp_id}
       response = requests_handler('post', url_addon, params=params)
       return response['authenticated']
     rescue GAuthifyError => e
