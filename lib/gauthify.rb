@@ -229,7 +229,7 @@ class GAuthify
     return requests_handler('post', url_addon, params=params)
   end
 
-  def send_sms(unique_id, sms_number = nil)
+  def send_sms(unique_id, sms_number = nil, options={})
     <<-DOC
         Sends text message to phone number with the one time auth_code
     DOC
@@ -237,6 +237,9 @@ class GAuthify
     params = {'unique_id' => unique_id}
     if sms_number
       params['sms_number'] = sms_number
+    end
+    if options[:template_id]
+      params['template_id'] = options[:template_id]
     end
     return requests_handler('post', url_addon, params=params)
   end
